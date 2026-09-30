@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Pengurus RT/RW — yang berhak update laporan
+// ============================================
+model Pengurus {
+  id          String   @id @default(cuid())
+  nama        String
+  jabatan     String   // Ketua RT, Sekretaris, dll
+  noWhatsapp  String   @unique // format: 628xxx (tanpa +)
+  aktif       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  updates LaporanUpdate[]
+
+  @@map("pengurus")
+}
+
+// ============================================
+// Laporan Warga
+// ============================================
+model Laporan {
+  id          String        @id @default(cuid())
+  kode        String        @unique // LP-0001, LP-0002, dst (auto-generate)
+  nama        String        // nama pelapor
+  noHp        String        // nomor HP pelapor
+  kategori    Kategori
+  judul       String
+  deskripsi   String        @db.Text
+  fotoUrl     String        // URL publik (Cloudinary/S3)
+  latitude    Float
+  longitude   Float
+  alamat      String?       @db.Text
+  status      Status        @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  updates LaporanUpdate[]
+
+  @@map("laporan")
+}
+
+// ============================================
+// Update/Tindak Lanjut dari Pengurus
+// ============================================
+model LaporanUpdate {
+  id          String   @id @default(cuid())
+  laporanId   String
+  pengurusId  String
+  status      Status
+  keterangan  String   @db.Text
+  fotoUrl     String?  // foto bukti perbaikan
+  createdAt   DateTime @default(now())
+
+  laporan  Laporan  @relation(fields: [laporanId], references: [id], onDelete: Cascade)
+  pengurus Pengurus @relation(fields: [pengurusId], references: [id])
+
+  @@map("laporan_update")
+}
+
+// ============================================
+// Enums
+// ============================================
+enum Status {
+  PENDING
+  DIPROSES
+  SELESAI
+  DITOLAK
+}
+
+enum Kategori {
+  JALAN_RUSAK
+  SAMPAH
+  PENERANGAN
+  SALURAN_AIR
+  FASILITAS_UMUM
+  KEAMANAN
+  LAINNYA
+}
