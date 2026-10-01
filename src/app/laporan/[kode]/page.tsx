@@ -26,78 +26,110 @@ export default async function LaporanDetailPage({
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <Link href="/dashboard" className="text-sm text-emerald-600 hover:underline mb-4 inline-block">
-        ← Kembali ke Dashboard
+      <Link href="/dashboard" className="text-sm font-semibold text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline mb-5 inline-flex items-center gap-1.5 transition-colors">
+        <span>←</span>
+        <span>Kembali ke Dashboard</span>
       </Link>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
         {/* Foto */}
-        <img src={laporan.fotoUrl} alt={laporan.judul} className="w-full h-64 object-cover" />
+        <div className="relative bg-slate-900">
+          <img src={laporan.fotoUrl} alt={laporan.judul} className="w-full h-72 sm:h-80 object-cover" />
+        </div>
 
-        <div className="p-6">
+        <div className="p-6 sm:p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-400 font-mono">{laporan.kode}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <span className="text-sm font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-md border border-slate-200 dark:border-slate-700">
+              {laporan.kode}
+            </span>
             <StatusBadge status={laporan.status} />
           </div>
 
-          <h1 className="text-xl font-bold mb-2">{laporan.judul}</h1>
-          <p className="text-gray-600 text-sm mb-4">{laporan.deskripsi}</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white mb-3 tracking-tight leading-snug">
+            {laporan.judul}
+          </h1>
 
-          {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-3 text-sm mb-6">
-            <div>
-              <span className="text-gray-400">Pelapor</span>
-              <p className="font-medium">{laporan.nama}</p>
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-4 mb-6">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+              Deskripsi Laporan
+            </h3>
+            <p className="text-slate-800 dark:text-slate-200 text-base leading-relaxed whitespace-pre-line font-normal">
+              {laporan.deskripsi}
+            </p>
+          </div>
+
+          {/* Info Grid (Anonim: tanpa nama & nomor HP) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+            <div className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                Sifat Pelapor
+              </span>
+              <p className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-1.5">
+                <span>🔒</span>
+                <span>Warga (Anonim)</span>
+              </p>
             </div>
-            <div>
-              <span className="text-gray-400">No. HP</span>
-              <p className="font-medium">{laporan.noHp}</p>
-            </div>
-            <div>
-              <span className="text-gray-400">Alamat</span>
-              <p className="font-medium">{laporan.alamat || "-"}</p>
-            </div>
-            <div>
-              <span className="text-gray-400">Lokasi</span>
-              <a href={mapsUrl} target="_blank" className="text-emerald-600 hover:underline font-medium">
-                Buka di Maps ↗
-              </a>
-            </div>
-            <div>
-              <span className="text-gray-400">Tanggal</span>
-              <p className="font-medium">
+            <div className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                Tanggal Laporan
+              </span>
+              <p className="font-semibold text-slate-900 dark:text-slate-100 text-base">
                 {new Date(laporan.createdAt).toLocaleDateString("id-ID", {
-                  dateStyle: "long",
+                  dateStyle: "medium",
                 })}
               </p>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                Alamat / Patokan
+              </span>
+              <p className="font-semibold text-slate-900 dark:text-slate-100 text-base">{laporan.alamat || "-"}</p>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                Titik Lokasi
+              </span>
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-bold hover:underline inline-flex items-center gap-1 text-base">
+                Buka di Google Maps ↗
+              </a>
             </div>
           </div>
 
           {/* Timeline Update */}
           {laporan.updates.length > 0 && (
             <div>
-              <h2 className="font-bold text-sm mb-3 text-gray-700">Riwayat Update</h2>
+              <h2 className="font-extrabold text-xl mb-4 text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <span>🔄</span>
+                <span>Riwayat Tindak Lanjut Pengurus</span>
+              </h2>
               <div className="space-y-4">
                 {laporan.updates.map((u) => (
-                  <div key={u.id} className="border-l-2 border-emerald-300 pl-4">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div key={u.id} className="border-l-3 border-emerald-500 pl-4 py-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <StatusBadge status={u.status} />
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                         {new Date(u.createdAt).toLocaleString("id-ID", {
                           dateStyle: "medium",
                           timeStyle: "short",
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700">{u.keterangan}</p>
-                    <p className="text-xs text-gray-400 mt-1">oleh {u.pengurus.nama} ({u.pengurus.jabatan})</p>
+                    <p className="text-base text-slate-900 dark:text-slate-100 leading-relaxed font-medium mb-1">
+                      {u.keterangan}
+                    </p>
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      Oleh: <span className="text-slate-800 dark:text-slate-200 font-semibold">{u.pengurus.nama} ({u.pengurus.jabatan})</span>
+                    </p>
                     {u.fotoUrl && (
-                      <img
-                        src={u.fotoUrl}
-                        alt="Bukti perbaikan"
-                        className="mt-2 rounded-lg max-h-48 object-cover"
-                      />
+                      <div className="mt-3">
+                        <span className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Foto Bukti Perbaikan:</span>
+                        <img
+                          src={u.fotoUrl}
+                          alt="Bukti perbaikan"
+                          className="rounded-xl border border-slate-200 dark:border-slate-700 max-h-56 object-cover shadow-xs"
+                        />
+                      </div>
                     )}
                   </div>
                 ))}

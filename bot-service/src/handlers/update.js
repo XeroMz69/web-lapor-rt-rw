@@ -10,6 +10,111 @@ const STATUS_MAP = {
   pending: "PENDING",
 };
 
+/**
+ * Download media dengan fallback berlapis (mengatasi bug upstream WA Web mimetype & LID)
+ */
+async function downloadMediaSafe(msg, client) {
+  try {
+    const media = await msg.downloadMedia();
+    if (media && media.data) return media;
+  } catch (err) {
+    console.warn("[downloadMedia] Standar downloadMedia gagal, mencoba direct fallback:", err?.message || err);
+  }
+
+  // Fallback: evaluasi langsung di konteks Puppeteer browser
+  try {
+    const rawId = msg.id;
+    const author = msg.author;
+    const msgKey =
+      rawId?._serialized ||
+      rawId?.$1 ||
+      (rawId?.remote && rawId?.id
+        ? `${rawId.fromMe ? "true" : "false"}_${rawId.remote}_${rawId.id}${author ? `_${author}` : ""}`
+        : null);
+
+    const result = await client.pupPage.evaluate(
+      async (msgKey, rawId) => {
+        const Collections = window.require("WAWebCollections");
+        const MsgCollection = Collections?.Msg;
+        let target = null;
+
+        const keysToTry = [
+          msgKey,
+          rawId?._serialized,
+          rawId?.$1,
+          rawId?.id,
+        ].filter(Boolean);
+
+        for (const k of keysToTry) {
+          try {
+            target = MsgCollection.get(k);
+            if (target) break;
+          } catch (e) {}
+          try {
+            const res = await MsgCollection.getMessagesById([k]);
+            target = res?.messages?.[0];
+            if (target) break;
+          } catch (e) {}
+        }
+
+        if (!target && MsgCollection?.getModelsArray) {
+          const shortId = rawId?.id;
+          if (shortId) {
+            const models = MsgCollection.getModelsArray();
+            target = models.find((m) => m?.id?.id === shortId);
+          }
+        }
+
+        if (!target || !target.mediaData) return null;
+
+        if (target.mediaData.mediaStage !== "RESOLVED") {
+          try {
+            await target.downloadMedia({
+              downloadEvenIfExpensive: true,
+              rmrReason: 1,
+            });
+          } catch (e) {}
+        }
+
+        const mockQpl = {
+          addAnnotations: () => mockQpl,
+          addPoint: () => mockQpl,
+        };
+
+        const decryptedMedia = await window
+          .require("WAWebDownloadManager")
+          .downloadManager.downloadAndMaybeDecrypt({
+            directPath: target.directPath,
+            encFilehash: target.encFilehash,
+            filehash: target.filehash,
+            mediaKey: target.mediaKey,
+            mediaKeyTimestamp: target.mediaKeyTimestamp,
+            type: target.type,
+            mimetype: target.mimetype,
+            signal: new AbortController().signal,
+            downloadQpl: mockQpl,
+          });
+
+        const data = await window.WWebJS.arrayBufferToBase64Async(decryptedMedia);
+        return {
+          data,
+          mimetype: target.mimetype,
+        };
+      },
+      msgKey,
+      rawId
+    );
+
+    if (result && result.data) {
+      return result;
+    }
+  } catch (fallbackErr) {
+    console.error("[downloadMedia] Fallback extraction error:", fallbackErr?.message || fallbackErr);
+  }
+
+  return null;
+}
+
 function setupUpdateHandler() {
   const onIncoming = async (msg) => {
     const body = (msg.body || "").trim();
@@ -137,16 +242,19 @@ function setupUpdateHandler() {
 
       console.log(`[Processing update] Laporan: ${kode}, Status: ${status}, Pengurus no: "${noWhatsapp}" (LID: "${lidNumber}")`);
 
-      // 4. Download foto bukti (jika ada)
+      // 4. Download foto bukti (jika ada) dengan fallback berlapis
       let fotoBase64 = null;
       let fotoExt = null;
       if (msg.hasMedia) {
         try {
-          const media = await msg.downloadMedia();
+          const media = await downloadMediaSafe(msg, client);
           if (media && media.data) {
             fotoBase64 = media.data;
             const ext = media.mimetype?.split("/")?.[1] || "jpg";
             fotoExt = ext.replace("jpeg", "jpg");
+            console.log(`[Foto Bukti] Berhasil diunduh (${fotoExt}, ${Math.round(fotoBase64.length * 0.75 / 1024)} KB)`);
+          } else {
+            console.warn("[Foto Bukti] Tidak ada data media yang berhasil di-decode");
           }
         } catch (mediaErr) {
           console.error("Gagal download foto bukti:", mediaErr.message);

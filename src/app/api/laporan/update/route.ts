@@ -64,8 +64,12 @@ export async function POST(req: NextRequest) {
     // Simpan foto perbaikan jika ada
     let fotoUrl: string | null = null;
     if (fotoBase64) {
-      const buffer = Buffer.from(fotoBase64, "base64");
-      fotoUrl = await saveBuffer(buffer, fotoExt || "jpg", "update");
+      try {
+        const buffer = Buffer.from(fotoBase64, "base64");
+        fotoUrl = await saveBuffer(buffer, fotoExt || "jpg", "update");
+      } catch (err: any) {
+        console.warn("Gagal menyimpan foto perbaikan:", err.message);
+      }
     }
 
     // Buat update & ubah status laporan dalam 1 transaksi

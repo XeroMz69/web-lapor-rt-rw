@@ -19,6 +19,22 @@ app.use("/api/notify", notifyRoute);
 setupUpdateHandler();
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Bot service running on port ${PORT}`);
 });
+
+// Penutupan bersih agar file sesi Chromium tersimpan rapi dan tidak corrupt
+async function gracefulShutdown(signal) {
+  console.log(`\n[${signal}] Menutup Bot Service secara aman...`);
+  try {
+    server.close();
+    await client.destroy();
+    console.log("Browser WhatsApp ditutup bersih. Sesi tersimpan.");
+  } catch (err) {
+    console.error("Error saat shutdown:", err.message);
+  }
+  process.exit(0);
+}
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));

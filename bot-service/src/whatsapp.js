@@ -1,13 +1,39 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
+const fs = require("fs");
+const path = require("path");
 
 let ready = false;
+
+// Bersihkan lock file usang agar sesi tidak corrupt saat restart
+function cleanStaleLocks(dataPath) {
+  const sessionDir = path.resolve(dataPath, "session");
+  const locks = ["SingletonLock", "SingletonCookie", "SingletonSocket"];
+  for (const lock of locks) {
+    const p = path.join(sessionDir, lock);
+    try {
+      if (fs.existsSync(p)) {
+        fs.unlinkSync(p);
+      }
+    } catch (_) {}
+  }
+}
+
+cleanStaleLocks("./wa-session");
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: "./wa-session" }),
   puppeteer: {
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--disable-gpu",
+    ],
   },
 });
 

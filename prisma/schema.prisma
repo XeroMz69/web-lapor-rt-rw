@@ -30,8 +30,8 @@ model Pengurus {
 model Laporan {
   id          String        @id @default(cuid())
   kode        String        @unique // LP-0001, LP-0002, dst (auto-generate)
-  nama        String        // nama pelapor
-  noHp        String        // nomor HP pelapor
+  nama        String?       @default("Anonim") // bersifat anonim
+  noHp        String?       @default("-")
   kategori    Kategori
   judul       String
   deskripsi   String        @db.Text

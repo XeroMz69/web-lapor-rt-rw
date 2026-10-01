@@ -7,8 +7,6 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
 
-    const nama = formData.get("nama") as string;
-    const noHp = formData.get("noHp") as string;
     const kategori = formData.get("kategori") as string;
     const judul = formData.get("judul") as string;
     const deskripsi = formData.get("deskripsi") as string;
@@ -17,9 +15,9 @@ export async function POST(req: NextRequest) {
     const alamat = formData.get("alamat") as string | null;
     const foto = formData.get("foto") as File | null;
 
-    if (!nama || !noHp || !kategori || !judul || !deskripsi || !foto) {
+    if (!kategori || !judul || !deskripsi || !foto) {
       return NextResponse.json(
-        { error: "Semua field wajib diisi" },
+        { error: "Kategori, judul, deskripsi, dan foto wajib diisi" },
         { status: 400 }
       );
     }
@@ -31,18 +29,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Simpan foto ke lokal
-    const fotoUrl = await saveFile(foto, "laporan");
+    // Simpan foto ke lokal dengan validasi ketat (JPG, JPEG, PNG, HEIC)
+    let fotoUrl: string;
+    try {
+      fotoUrl = await saveFile(foto, "laporan");
+    } catch (uploadErr: any) {
+      return NextResponse.json(
+        { error: uploadErr.message || "File foto tidak valid" },
+        { status: 400 }
+      );
+    }
 
     // Generate kode laporan
     const kode = await generateKodeLaporan();
 
-    // Simpan ke DB
+    // Simpan ke DB secara anonim
     const laporan = await prisma.laporan.create({
       data: {
         kode,
-        nama,
-        noHp,
+        nama: "Anonim",
+        noHp: "-",
         kategori: kategori as any,
         judul,
         deskripsi,
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             kode: laporan.kode,
-            nama: laporan.nama,
+            nama: "Anonim (Warga)",
             kategori: laporan.kategori,
             judul: laporan.judul,
             deskripsi: laporan.deskripsi,

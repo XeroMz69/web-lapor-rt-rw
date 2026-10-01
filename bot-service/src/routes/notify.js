@@ -39,7 +39,7 @@ router.post("/", authMiddleware, async (req, res) => {
     const caption = [
       `📢 *LAPORAN BARU* — ${kode}`,
       ``,
-      `👤 Pelapor: ${nama}`,
+      `👤 Pelapor: ${nama || "Anonim (Warga)"}`,
       `📂 Kategori: ${KATEGORI_LABEL[kategori] || kategori}`,
       `📌 Judul: *${judul}*`,
       `📝 Deskripsi: ${deskripsi}`,
