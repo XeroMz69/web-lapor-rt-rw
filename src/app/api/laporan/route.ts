@@ -1,0 +1,127 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { generateKodeLaporan } from "@/lib/generate-kode";
+import { saveFile } from "@/lib/upload";
+
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData();
+
+    const nama = formData.get("nama") as string;
+    const noHp = formData.get("noHp") as string;
+    const kategori = formData.get("kategori") as string;
+    const judul = formData.get("judul") as string;
+    const deskripsi = formData.get("deskripsi") as string;
+    const latitude = parseFloat(formData.get("latitude") as string);
+    const longitude = parseFloat(formData.get("longitude") as string);
+    const alamat = formData.get("alamat") as string | null;
+    const foto = formData.get("foto") as File | null;
+
+    if (!nama || !noHp || !kategori || !judul || !deskripsi || !foto) {
+      return NextResponse.json(
+        { error: "Semua field wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return NextResponse.json(
+        { error: "Lokasi tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    // Simpan foto ke lokal
+    const fotoUrl = await saveFile(foto, "laporan");
+
+    // Generate kode laporan
+    const kode = await generateKodeLaporan();
+
+    // Simpan ke DB
+    const laporan = await prisma.laporan.create({
+      data: {
+        kode,
+        nama,
+        noHp,
+        kategori: kategori as any,
+        judul,
+        deskripsi,
+        fotoUrl,
+        latitude,
+        longitude,
+        alamat,
+      },
+    });
+
+    // Trigger Bot Service untuk kirim notifikasi ke grup WA
+    try {
+      const botUrl = process.env.BOT_SERVICE_URL;
+      if (botUrl) {
+        const botRes = await fetch(`${botUrl}/api/notify`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.API_SECRET_KEY?.replace(/^"|"$/g, "") || "",
+          },
+          body: JSON.stringify({
+            kode: laporan.kode,
+            nama: laporan.nama,
+            kategori: laporan.kategori,
+            judul: laporan.judul,
+            deskripsi: laporan.deskripsi,
+            fotoUrl: laporan.fotoUrl,
+            latitude: laporan.latitude,
+            longitude: laporan.longitude,
+            alamat: laporan.alamat,
+            createdAt: laporan.createdAt,
+          }),
+        });
+
+        const botData = await botRes.json().catch(() => ({}));
+        if (!botRes.ok) {
+          console.error("Bot service error:", botRes.status, botData);
+        } else {
+          console.log("Bot notification sent successfully:", botData);
+        }
+      }
+    } catch (err) {
+      console.error("Bot service unreachable, skipping WA notification:", err);
+    }
+
+    return NextResponse.json({ success: true, data: laporan }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating laporan:", error);
+    return NextResponse.json(
+      { error: "Gagal membuat laporan" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get("status");
+  const kategori = searchParams.get("kategori");
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "10");
+
+  const where: Record<string, unknown> = {};
+  if (status) where.status = status;
+  if (kategori) where.kategori = kategori;
+
+  const [data, total] = await Promise.all([
+    prisma.laporan.findMany({
+      where,
+      include: { updates: { include: { pengurus: true } } },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.laporan.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    data,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  });
+}

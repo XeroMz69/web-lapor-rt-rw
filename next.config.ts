@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["@prisma/client"],
+  allowedDevOrigins: ["nas.xero", "localhost:3000"],
 };
 
 export default nextConfig;

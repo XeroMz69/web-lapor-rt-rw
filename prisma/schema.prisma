@@ -35,7 +35,7 @@ model Laporan {
   kategori    Kategori
   judul       String
   deskripsi   String        @db.Text
-  fotoUrl     String        // URL publik (Cloudinary/S3)
+  fotoUrl     String        // path relatif: /uploads/laporan/xxx.jpg
   latitude    Float
   longitude   Float
   alamat      String?       @db.Text
@@ -57,7 +57,7 @@ model LaporanUpdate {
   pengurusId  String
   status      Status
   keterangan  String   @db.Text
-  fotoUrl     String?  // foto bukti perbaikan
+  fotoUrl     String?  // path relatif: /uploads/update/xxx.jpg
   createdAt   DateTime @default(now())
 
   laporan  Laporan  @relation(fields: [laporanId], references: [id], onDelete: Cascade)
