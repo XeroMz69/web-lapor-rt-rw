@@ -182,7 +182,7 @@ export default function FormLaporan() {
         <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
           Foto Bukti Kerusakan <span className="text-rose-600">*</span>
           <span className="ml-2 text-xs font-normal text-slate-500 dark:text-slate-400">
-            (Hanya JPG, JPEG, PNG, HEIC — Maks. 10MB)
+            (JPG, JPEG, PNG, HEIC — Maks. 10MB)
           </span>
         </label>
         <input
