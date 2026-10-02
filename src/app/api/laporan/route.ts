@@ -60,9 +60,16 @@ export async function POST(req: NextRequest) {
     });
 
     // Trigger Bot Service untuk kirim notifikasi ke grup WA
+    let botSent = false;
+    let fallbackContact: { nama: string; noWhatsapp: string } | null = null;
+
     try {
       const botUrl = process.env.BOT_SERVICE_URL;
       if (botUrl) {
+        // Beri timeout 4 detik agar pelapor tidak menunggu lama jika bot mati/unreachable
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
         const botRes = await fetch(`${botUrl}/api/notify`, {
           method: "POST",
           headers: {
@@ -81,20 +88,77 @@ export async function POST(req: NextRequest) {
             alamat: laporan.alamat,
             createdAt: laporan.createdAt,
           }),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
+
         const botData = await botRes.json().catch(() => ({}));
-        if (!botRes.ok) {
-          console.error("Bot service error:", botRes.status, botData);
-        } else {
+        if (botRes.ok) {
+          botSent = true;
           console.log("Bot notification sent successfully:", botData);
+        } else {
+          console.warn("Bot service responded with error:", botRes.status, botData);
         }
       }
-    } catch (err) {
-      console.error("Bot service unreachable, skipping WA notification:", err);
+    } catch (err: any) {
+      console.warn("Bot service unreachable / timeout:", err?.message || err);
     }
 
-    return NextResponse.json({ success: true, data: laporan }, { status: 201 });
+    // Jika bot mati/gagal kirim, ambil kontak pengurus darurat untuk ditampilkan ke pelapor
+    if (!botSent) {
+      // Prioritaskan kontak darurat dari .env jika didefinisikan
+      const envEmergencyPhone = process.env.EMERGENCY_CONTACT_PHONE || process.env.NO_PENGURUS_DARURAT;
+      const envEmergencyName = process.env.EMERGENCY_CONTACT_NAME || "Pengurus RT/RW (Call Center)";
+
+      if (envEmergencyPhone) {
+        let cleanPhone = envEmergencyPhone.replace(/[^0-9]/g, "");
+        if (cleanPhone.startsWith("0")) {
+          cleanPhone = "62" + cleanPhone.slice(1);
+        }
+        fallbackContact = {
+          nama: envEmergencyName,
+          noWhatsapp: cleanPhone,
+        };
+      } else {
+        try {
+          const pengurusDarurat = await prisma.pengurus.findFirst({
+            where: { aktif: true },
+            select: { nama: true, jabatan: true, noWhatsapp: true },
+            orderBy: { createdAt: "asc" },
+          });
+
+          if (pengurusDarurat) {
+            fallbackContact = {
+              nama: `${pengurusDarurat.nama} (${pengurusDarurat.jabatan})`,
+              noWhatsapp: pengurusDarurat.noWhatsapp,
+            };
+          } else {
+            fallbackContact = {
+              nama: "Pengurus RT/RW (Call Center)",
+              noWhatsapp: "6285773074389",
+            };
+          }
+        } catch (_) {
+          fallbackContact = {
+            nama: "Pengurus RT/RW",
+            noWhatsapp: "6285773074389",
+          };
+        }
+      }
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: laporan,
+        botStatus: {
+          sent: botSent,
+          fallbackContact: !botSent ? fallbackContact : null,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating laporan:", error);
     return NextResponse.json(

@@ -47,32 +47,40 @@ export default async function DashboardPage({
   ]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Dashboard Laporan</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 font-medium">Monitoring status fasilitas publik secara transparan</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
+            <span>📊</span>
+            <span>Transparansi SIPENA CIVIL</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-950 dark:text-white tracking-tight">
+            Dashboard Penanganan Fasilitas
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base mt-1 font-normal">
+            Pantau seluruh laporan dan verifikasi bukti perbaikan oleh pengurus RT/RW secara real-time.
+          </p>
         </div>
         <Link
           href="/lapor"
-          className="inline-flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm px-6 py-3 rounded-2xl shadow-md shadow-emerald-600/20 hover:-translate-y-0.5 transition-all self-start sm:self-auto"
         >
           <span>✍️</span>
-          <span>Buat Laporan</span>
+          <span>Buat Laporan Baru</span>
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
-          { label: "Total Laporan", value: totalAll, color: "text-slate-900 dark:text-white" },
-          { label: "Menunggu", value: pending, color: "text-amber-800 dark:text-amber-400" },
-          { label: "Diproses", value: diproses, color: "text-blue-800 dark:text-blue-400" },
-          { label: "Selesai", value: selesai, color: "text-emerald-800 dark:text-emerald-400" },
+          { label: "Total Laporan", value: totalAll, color: "text-slate-900 dark:text-white", bg: "from-slate-500/10 to-slate-500/5 border-slate-200 dark:border-slate-800" },
+          { label: "Menunggu", value: pending, color: "text-amber-600 dark:text-amber-400", bg: "from-amber-500/10 to-amber-500/5 border-amber-200/80 dark:border-amber-900/40" },
+          { label: "Diproses", value: diproses, color: "text-blue-600 dark:text-blue-400", bg: "from-blue-500/10 to-blue-500/5 border-blue-200/80 dark:border-blue-900/40" },
+          { label: "Selesai", value: selesai, color: "text-emerald-600 dark:text-emerald-400", bg: "from-emerald-500/10 to-emerald-500/5 border-emerald-200/80 dark:border-emerald-900/40" },
         ].map((s) => (
-          <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-xs border border-slate-200 dark:border-slate-800 text-center transition-colors">
-            <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">{s.label}</div>
+          <div key={s.label} className={`p-5 rounded-3xl bg-gradient-to-b ${s.bg} bg-white dark:bg-slate-900 border shadow-xs text-center transition-colors`}>
+            <div className={`text-3xl sm:text-4xl font-black ${s.color}`}>{s.value}</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1.5">{s.label}</div>
           </div>
         ))}
       </div>

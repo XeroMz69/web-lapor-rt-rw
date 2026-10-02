@@ -20,7 +20,13 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function FormLaporan() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; kode?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    kode?: string;
+    error?: string;
+    botSent?: boolean;
+    fallbackContact?: { nama: string; noWhatsapp: string } | null;
+  } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
@@ -68,7 +74,12 @@ export default function FormLaporan() {
       const data = await res.json();
 
       if (res.ok) {
-        setResult({ success: true, kode: data.data.kode });
+        setResult({
+          success: true,
+          kode: data.data.kode,
+          botSent: data.botStatus?.sent ?? true,
+          fallbackContact: data.botStatus?.fallbackContact || null,
+        });
         formRef.current?.reset();
         setPreview(null);
         setLat(null);
@@ -127,16 +138,75 @@ export default function FormLaporan() {
 
       {/* Hasil Submit */}
       {result && (
-        <div
-          className={`rounded-xl p-4 text-sm font-semibold border ${
-            result.success
-              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700"
-              : "bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-200 border-rose-300 dark:border-rose-700"
-          }`}
-        >
-          {result.success
-            ? `✅ Laporan berhasil dikirim! Kode Laporan: ${result.kode}`
-            : `❌ ${result.error}`}
+        <div className="space-y-3">
+          {result.success ? (
+            <>
+              {/* Notifikasi Laporan Berhasil Masuk Database */}
+              <div className="rounded-2xl p-4 sm:p-5 text-sm font-semibold border bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 shadow-xs">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl shrink-0">✅</span>
+                  <div>
+                    <h4 className="font-extrabold text-base mb-1">
+                      Laporan Berhasil Disimpan di Sistem!
+                    </h4>
+                    <p className="text-xs sm:text-sm font-medium leading-relaxed mb-2">
+                      Laporan Anda telah tersimpan secara anonim dengan kode:{" "}
+                      <span className="font-mono font-black text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-emerald-300 dark:border-emerald-700 inline-block">
+                        {result.kode}
+                      </span>
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Anda dapat memantau status perkembangan perbaikannya kapan saja di menu Dashboard.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notifikasi Khusus Jika Bot Service Offline / Gagal Meneruskan */}
+              {result.botSent === false && result.fallbackContact && (
+                <div className="rounded-2xl p-4 sm:p-5 text-sm border bg-amber-50 dark:bg-amber-950/50 text-amber-950 dark:text-amber-200 border-amber-300 dark:border-amber-700 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl shrink-0">⚠️</span>
+                    <div className="flex-1">
+                      <h4 className="font-extrabold text-base mb-1 text-amber-900 dark:text-amber-200">
+                        Notifikasi Otomatis Bot Sedang Offline
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
+                        Laporan Anda <strong>sudah tersimpan di database</strong> dan nanti tetap bisa ditindaklanjuti via WhatsApp oleh pengurus begitu bot menyala kembali. Namun, pemberitahuan instan saat ini tidak dapat terkirim otomatis ke grup.
+                      </p>
+
+                      <div className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/60 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Kontak Darurat Pengurus:
+                          </span>
+                          <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                            {result.fallbackContact.nama}
+                          </span>
+                        </div>
+                        <a
+                          href={`https://wa.me/${result.fallbackContact.noWhatsapp}?text=Halo%20Pengurus%20RT/RW,%20saya%20telah%20membuat%20laporan%20fasilitas%20dengan%20kode%20*${result.kode}*.%20Mohon%20bantuannya%20untuk%20dicek.`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors shrink-0"
+                        >
+                          <span>💬</span>
+                          <span>Hubungi Pengurus ({result.fallbackContact.noWhatsapp})</span>
+                        </a>
+                      </div>
+                      <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                        💡 _Jika masalah sangat mendesak/darurat, silakan klik tombol di atas untuk menghubungi nomor pengurus secara langsung._
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-xl p-4 text-sm font-semibold border bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-200 border-rose-300 dark:border-rose-700">
+              ❌ {result.error}
+            </div>
+          )}
         </div>
       )}
 

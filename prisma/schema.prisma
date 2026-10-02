@@ -20,6 +20,7 @@ model Pengurus {
   updatedAt   DateTime @updatedAt
 
   updates LaporanUpdate[]
+  kasDicatat KasTransaksi[]
 
   @@map("pengurus")
 }
@@ -43,7 +44,8 @@ model Laporan {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  updates LaporanUpdate[]
+  updates   LaporanUpdate[]
+  transaksi KasTransaksi[]
 
   @@map("laporan")
 }
@@ -67,8 +69,38 @@ model LaporanUpdate {
 }
 
 // ============================================
+// Transparansi Kas Lingkungan RT/RW
+// ============================================
+model KasTransaksi {
+  id          String         @id @default(cuid())
+  tipe        TipeTransaksi  // PEMASUKAN atau PENGELUARAN
+  nominal     Float
+  kategori    String         // Iuran Warga, Perbaikan Jalan, Sampah, Dana Sosial, dll
+  keterangan  String         @db.Text
+  buktiUrl    String?        // path bukti nota/kuitansi/struk
+  tanggal     DateTime       @default(now())
+  
+  // Hubungan opsional ke laporan tertentu (misal pengeluaran untuk tambal jalan LP-0001)
+  laporanId   String?
+  laporan     Laporan?       @relation(fields: [laporanId], references: [id], onDelete: SetNull)
+
+  // Pengurus pencatat transaksi
+  pengurusId  String?
+  pengurus    Pengurus?      @relation(fields: [pengurusId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime       @default(now())
+
+  @@map("kas_transaksi")
+}
+
+// ============================================
 // Enums
 // ============================================
+enum TipeTransaksi {
+  PEMASUKAN
+  PENGELUARAN
+}
+
 enum Status {
   PENDING
   DIPROSES

@@ -210,6 +210,28 @@ Pengurus cukup menekan **Reply / Balas** pada pesan laporan bot di atas, lalu me
 !update LP-0001 Selesai Perbaikan sudah rampung
 ```
 
+### Modul Pengelolaan Kas Warga via WhatsApp:
+Pengurus RT/RW dapat mengelola pembukuan kas langsung di grup WA:
+
+1. **Cek Saldo Kas Terkini**:
+   ```
+   !saldo
+   ```
+   *Bot akan membalas total saldo kas tersedia, total pemasukan, dan total pengeluaran.*
+
+2. **Catat Pemasukan Kas (Iuran, Donasi, Sumbangan)**:
+   ```
+   !kas masuk <Nominal> <Kategori> | <Keterangan>
+   ```
+   *Contoh*: `!kas masuk 3500000 Iuran Warga | Pembayaran iuran 70 KK bulan Oktober`
+
+3. **Catat Pengeluaran Kas (Bisa Melampirkan Foto Nota/Struk)**:
+   ```
+   !kas keluar <Nominal> <Kategori> | <Keterangan> [KodeLaporan]
+   ```
+   *Contoh*: `!kas keluar 350000 Perbaikan Jalan | Pembelian semen dan pasir LP-0001`
+   *(Pengurus bisa mengetik caption tersebut sambil melampirkan foto nota/struk toko material)*.
+
 ---
 
 ## 5. Keamanan & Validasi File

@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build:worker": "opennextjs-cloudflare build",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -13,7 +15,9 @@
     "pengurus:add": "npx tsx src/lib/add-pengurus.ts"
   },
   "dependencies": {
+    "@prisma/adapter-d1": "^7.10.0",
     "@prisma/client": "^5.22.0",
+    "jimp": "^1.6.1",
     "leaflet": "^1.9.4",
     "next": "16.3.7",
     "prisma": "^5.22.0",
@@ -22,6 +26,7 @@
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.7",
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26",
@@ -31,6 +36,7 @@
     "eslint-config-next": "16.3.7",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^7"
+    "typescript": "^7",
+    "wrangler": "^4.147.0"
   }
 }

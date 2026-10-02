@@ -3,6 +3,7 @@ const express = require("express");
 const { client, isReady } = require("./whatsapp");
 const notifyRoute = require("./routes/notify");
 const { setupUpdateHandler } = require("./handlers/update");
+const { setupKasHandler } = require("./handlers/kas");
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
@@ -15,8 +16,9 @@ app.get("/health", (_req, res) => {
 // Route: Next.js trigger kirim notifikasi ke grup WA
 app.use("/api/notify", notifyRoute);
 
-// Register handler !update dari grup WA
+// Register handler !update & modul kas dari grup WA
 setupUpdateHandler();
+setupKasHandler();
 
 const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {

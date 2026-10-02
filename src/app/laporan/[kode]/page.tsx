@@ -17,6 +17,9 @@ export default async function LaporanDetailPage({
         include: { pengurus: true },
         orderBy: { createdAt: "desc" },
       },
+      transaksi: {
+        orderBy: { tanggal: "desc" },
+      },
     },
   });
 
@@ -131,6 +134,49 @@ export default async function LaporanDetailPage({
                         />
                       </div>
                     )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Transparansi Alokasi Dana Kas Terkait Laporan Ini */}
+          {laporan.transaksi && laporan.transaksi.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+              <h2 className="font-extrabold text-xl mb-3 text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <span>💰</span>
+                <span>Transparansi Biaya & Alokasi Kas</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Rincian dana kas warga yang dialokasikan untuk penanganan laporan ini.
+              </p>
+              <div className="space-y-3">
+                {laporan.transaksi.map((t) => (
+                  <div
+                    key={t.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">
+                          {t.kategori}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300">
+                          {t.tipe}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        {t.keterangan}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-base font-black text-rose-600 dark:text-rose-400">
+                        - Rp {t.nominal.toLocaleString("id-ID")}
+                      </span>
+                      <span className="block text-[10px] text-slate-400 dark:text-slate-500">
+                        {new Date(t.tanggal).toLocaleDateString("id-ID")}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

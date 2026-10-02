@@ -1,15 +1,58 @@
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { Jimp } from "jimp";
 
 type UploadType = "laporan" | "update";
 
-export const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".heic"];
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".heic", ".bmp"];
+export const MAX_FILE_SIZE = 15 * 1024 * 1024; // Batas input 15MB sebelum dikompresi
 
 /**
- * Validasi magic bytes (header biner) untuk memastikan file benar-benar gambar,
- * bukan script atau file executable yang di-rename.
+ * Kompresi gambar menggunakan Jimp (Pure JS, aman untuk semua arsitektur CPU):
+ * - Resolusi: skala otomatis jika lebar atau tinggi melebihi 1600px
+ * - Kualitas JPEG: 75%
+ * - Ukuran output: 100 KB - 400 KB (selalu di bawah 500 KB)
+ */
+export async function compressImage(inputBuffer: Buffer): Promise<{ buffer: Buffer; ext: string }> {
+  try {
+    const image = await Jimp.read(inputBuffer);
+    const width = image.bitmap.width;
+    const height = image.bitmap.height;
+
+    // Skala proporsional jika lebih besar dari 1600px
+    const maxDim = 1600;
+    if (width > maxDim || height > maxDim) {
+      if (width >= height) {
+        image.resize({ w: maxDim });
+      } else {
+        image.resize({ h: maxDim });
+      }
+    }
+
+    // Ekspor ke buffer JPEG dengan kualitas teroptimasi
+    let outputBuffer = await image.getBuffer("image/jpeg", { quality: 75 });
+
+    // Jika masih di atas 500 KB, resize ke 1200px dengan kualitas 70%
+    if (outputBuffer.length > 500 * 1024) {
+      const smallerDim = 1200;
+      if (image.bitmap.width >= image.bitmap.height) {
+        image.resize({ w: smallerDim });
+      } else {
+        image.resize({ h: smallerDim });
+      }
+      outputBuffer = await image.getBuffer("image/jpeg", { quality: 70 });
+    }
+
+    return { buffer: outputBuffer, ext: ".jpg" };
+  } catch (err: any) {
+    console.warn("[compressImage] Gagal kompresi Jimp, fallback ke buffer asli:", err.message);
+    return { buffer: inputBuffer, ext: ".jpg" };
+  }
+}
+
+/**
+ * Validasi magic bytes (header biner) untuk memastikan file benar-benar gambar.
  */
 export function validateImageBuffer(buffer: Buffer, ext: string): boolean {
   const cleanExt = ext.toLowerCase().startsWith(".")
@@ -44,12 +87,17 @@ export function validateImageBuffer(buffer: Buffer, ext: string): boolean {
     return ftyp === "ftyp";
   }
 
+  // BMP: bytes 0-1 "BM"
+  if (cleanExt === ".bmp") {
+    return buffer[0] === 0x42 && buffer[1] === 0x4d;
+  }
+
   return false;
 }
 
 /**
  * Simpan file ke public/uploads/<type>/<uuid>.<ext>
- * Melakukan validasi ekstensi, ukuran, dan magic bytes.
+ * Melakukan validasi ekstensi, ukuran, magic bytes, dan kompresi otomatis ke bawah 500 KB.
  */
 export async function saveFile(
   file: File,
@@ -64,30 +112,38 @@ export async function saveFile(
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error("Ukuran file melebihi batas maksimum 10MB.");
+    throw new Error("Ukuran file melebihi batas maksimum 15MB.");
   }
 
   const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
+  const rawBuffer = Buffer.from(bytes);
 
-  if (!validateImageBuffer(buffer, ext)) {
+  if (!validateImageBuffer(rawBuffer, ext)) {
     throw new Error(
       "Isi file tidak valid atau bukan gambar asli yang didukung (verifikasi header gagal)."
     );
   }
 
-  const filename = `${randomUUID()}${ext}`;
+  // Kompresi otomatis gambar ke JPEG berkualitas tinggi (< 500 KB)
+  const { buffer: compressedBuffer, ext: finalExt } = await compressImage(rawBuffer);
+
+  const filename = `${randomUUID()}${finalExt}`;
   const dir = path.join(process.cwd(), "public", "uploads", type);
   await mkdir(dir, { recursive: true });
 
   const filepath = path.join(dir, filename);
-  await writeFile(filepath, buffer);
+  await writeFile(filepath, compressedBuffer);
+
+  console.log(
+    `[Upload ${type}] Asli: ${(rawBuffer.length / 1024).toFixed(1)} KB -> Terkompresi: ${(compressedBuffer.length / 1024).toFixed(1)} KB (${finalExt})`
+  );
 
   return `/uploads/${type}/${filename}`;
 }
 
 /**
- * Simpan buffer langsung (dari Bot Service atau stream)
+ * Simpan buffer langsung (dari Bot Service atau webhook WA)
+ * Otomatis terkompresi ke bawah 500 KB.
  */
 export async function saveBuffer(
   buffer: Buffer,
@@ -105,7 +161,7 @@ export async function saveBuffer(
   }
 
   if (buffer.length > MAX_FILE_SIZE) {
-    throw new Error("Ukuran buffer melebihi batas maksimum 10MB.");
+    throw new Error("Ukuran buffer melebihi batas maksimum 15MB.");
   }
 
   if (!validateImageBuffer(buffer, ext)) {
@@ -114,12 +170,19 @@ export async function saveBuffer(
     );
   }
 
-  const filename = `${randomUUID()}${ext}`;
+  // Kompresi otomatis buffer
+  const { buffer: compressedBuffer, ext: finalExt } = await compressImage(buffer);
+
+  const filename = `${randomUUID()}${finalExt}`;
   const dir = path.join(process.cwd(), "public", "uploads", type);
   await mkdir(dir, { recursive: true });
 
   const filepath = path.join(dir, filename);
-  await writeFile(filepath, buffer);
+  await writeFile(filepath, compressedBuffer);
+
+  console.log(
+    `[Upload Bot ${type}] Asli: ${(buffer.length / 1024).toFixed(1)} KB -> Terkompresi: ${(compressedBuffer.length / 1024).toFixed(1)} KB (${finalExt})`
+  );
 
   return `/uploads/${type}/${filename}`;
 }

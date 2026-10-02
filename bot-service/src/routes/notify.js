@@ -53,27 +53,37 @@ router.post("/", authMiddleware, async (req, res) => {
       `Contoh: _!update Selesai Jalan sudah ditambal_`,
     ].join("\n");
 
-    // Ambil foto dari Next.js server (file lokal)
-    const nextjsUrl = process.env.NEXTJS_URL || "http://localhost:3000";
-    const fotoFullUrl = `${nextjsUrl}${fotoUrl}`;
+    // Validasi fotoUrl mencegah path traversal / SSRF
+    const safeFotoUrl = typeof fotoUrl === "string" && fotoUrl.startsWith("/uploads/")
+      ? fotoUrl
+      : null;
 
-    let media;
-    try {
-      media = await MessageMedia.fromUrl(fotoFullUrl, {
-        unsafeMime: true,
-      });
-    } catch {
-      // Fallback: coba baca langsung dari filesystem (jika satu server)
-      const localPath = path.resolve(__dirname, "../../..", `public${fotoUrl}`);
+    let media = null;
+    if (safeFotoUrl) {
+      // Fallback 1: baca langsung dari filesystem jika satu mesin
+      const localPath = path.resolve(__dirname, "../../..", `public${safeFotoUrl}`);
       if (fs.existsSync(localPath)) {
         media = MessageMedia.fromFilePath(localPath);
+      } else {
+        // Fallback 2: ambil via HTTP ke server Next.js terpercaya
+        const nextjsUrl = process.env.NEXTJS_URL || "http://localhost:3000";
+        try {
+          const parsedUrl = new URL(safeFotoUrl, nextjsUrl);
+          // Cegah redirect / query ke host selain NextJS_URL
+          const allowedOrigin = new URL(nextjsUrl).origin;
+          if (parsedUrl.origin === allowedOrigin) {
+            media = await MessageMedia.fromUrl(parsedUrl.toString(), {
+              unsafeMime: true,
+            });
+          }
+        } catch (_) {}
       }
     }
 
     if (media) {
       await client.sendMessage(groupId, media, { caption });
     } else {
-      // Kirim tanpa foto jika gagal
+      // Kirim tanpa foto jika gagal atau path tidak valid
       await client.sendMessage(groupId, caption);
     }
 

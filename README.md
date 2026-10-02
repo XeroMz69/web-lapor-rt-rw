@@ -153,10 +153,6 @@ Pengurus yang berhak melakukan update via WhatsApp harus terdaftar di database.
 
 ## 🗑️ Manajemen & Hapus Laporan
 
-- **Hapus via Terminal (Beserta File Foto Terkait)**:
-  ```bash
-  npx tsx src/lib/delete-laporan.ts LP-0001
-  ```
 - **Hapus via Prisma Studio**:
   Jalankan `npm run db:studio`, pilih tabel `laporan`, pilih baris laporan yang ingin dihapus, lalu klik `Delete record`. Relasi tindak lanjut otomatis terhapus (*Cascade*).
 
@@ -170,10 +166,3 @@ Untuk arsitektur teknis, spesifikasi API, format pesan bot, dan panduan troubles
 
 ## 📄 Lisensi
 Didistribusikan untuk keperluan digitalisasi tata kelola lingkungan warga RT/RW.
-
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
