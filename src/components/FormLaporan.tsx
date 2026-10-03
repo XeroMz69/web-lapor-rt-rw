@@ -17,6 +17,38 @@ const KATEGORI = [
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".heic"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const TARGET_FILE_SIZE = 500 * 1024;
+
+async function compressForUpload(file: File): Promise<File> {
+  const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+  if (!['.jpg', '.jpeg', '.png'].includes(ext) || file.size <= TARGET_FILE_SIZE) {
+    return file;
+  }
+
+  const bitmap = await createImageBitmap(file);
+  const maxDimension = 1600;
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  let quality = 0.78;
+  let blob: Blob | null = null;
+  do {
+    blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', quality)
+    );
+    quality -= 0.08;
+  } while (blob && blob.size > TARGET_FILE_SIZE && quality >= 0.4);
+
+  if (!blob) return file;
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, {
+    type: 'image/jpeg',
+    lastModified: Date.now(),
+  });
+}
 
 export default function FormLaporan() {
   const [loading, setLoading] = useState(false);
@@ -63,6 +95,13 @@ export default function FormLaporan() {
         });
         setLoading(false);
         return;
+      }
+
+      try {
+        const compressedFoto = await compressForUpload(foto);
+        form.set('foto', compressedFoto);
+      } catch (compressionError) {
+        console.warn('Kompresi browser gagal, file asli tetap dikirim:', compressionError);
       }
     }
 
