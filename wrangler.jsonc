@@ -40,4 +40,10 @@
       "bucket_name": "sipena-civil"
     }
   ],
+  "vars": {
+    "BOT_SERVICE_URL": "https://bot.adamyd.my.id",
+    "EMERGENCY_CONTACT_PHONE": "628123456789",
+    "EMERGENCY_CONTACT_NAME": "Pengurus RT/RW (Call Center)",
+    "MEDIA_PUBLIC_URL": "https://s3-sipena-civil.adamyd.my.id"
+  }
 }

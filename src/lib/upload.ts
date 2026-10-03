@@ -1,9 +1,26 @@
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { randomUUID } from "crypto";
-import { Jimp } from "jimp";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 type UploadType = "laporan" | "update";
+
+function getR2Bucket(): any | null {
+  try {
+    const env = getCloudflareContext().env as CloudflareEnv;
+    return env.MEDIA_BUCKET || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function getR2PublicUrl(key: string): string {
+  try {
+    const env = getCloudflareContext().env as CloudflareEnv & { MEDIA_PUBLIC_URL?: string };
+    if (env.MEDIA_PUBLIC_URL) {
+      return `${env.MEDIA_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
+    }
+  } catch (_) {}
+  return `/uploads/${key}`;
+}
 
 export const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".heic", ".bmp"];
 export const MAX_FILE_SIZE = 15 * 1024 * 1024; // Batas input 15MB sebelum dikompresi
@@ -16,6 +33,7 @@ export const MAX_FILE_SIZE = 15 * 1024 * 1024; // Batas input 15MB sebelum dikom
  */
 export async function compressImage(inputBuffer: Buffer): Promise<{ buffer: Buffer; ext: string }> {
   try {
+    const { Jimp } = await import("jimp");
     const image = await Jimp.read(inputBuffer);
     const width = image.bitmap.width;
     const height = image.bitmap.height;
@@ -103,7 +121,7 @@ export async function saveFile(
   file: File,
   type: UploadType
 ): Promise<string> {
-  const ext = (path.extname(file.name) || "").toLowerCase();
+  const ext = (file.name.match(/\.[^.]+$/)?.[0] || "").toLowerCase();
 
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     throw new Error(
@@ -124,14 +142,25 @@ export async function saveFile(
     );
   }
 
-  // Kompresi otomatis gambar ke JPEG berkualitas tinggi (< 500 KB)
-  const { buffer: compressedBuffer, ext: finalExt } = await compressImage(rawBuffer);
+  const bucket = getR2Bucket();
+  if (bucket) {
+    const filename = `${randomUUID()}${ext}`;
+    await bucket.put(`${type}/${filename}`, rawBuffer, {
+      httpMetadata: { contentType: file.type || "application/octet-stream", cacheControl: "public, max-age=31536000, immutable" },
+    });
+    return getR2PublicUrl(`${type}/${filename}`);
+  }
 
+  // Kompresi otomatis hanya pada server Node lokal (Jimp tidak dijalankan di Worker).
+  const { buffer: compressedBuffer, ext: finalExt } = await compressImage(rawBuffer);
   const filename = `${randomUUID()}${finalExt}`;
-  const dir = path.join(process.cwd(), "public", "uploads", type);
+
+  const pathModule = await import("path");
+  const { writeFile, mkdir } = await import("fs/promises");
+  const dir = pathModule.join(process.cwd(), "public", "uploads", type);
   await mkdir(dir, { recursive: true });
 
-  const filepath = path.join(dir, filename);
+  const filepath = pathModule.join(dir, filename);
   await writeFile(filepath, compressedBuffer);
 
   console.log(
@@ -170,14 +199,24 @@ export async function saveBuffer(
     );
   }
 
-  // Kompresi otomatis buffer
-  const { buffer: compressedBuffer, ext: finalExt } = await compressImage(buffer);
+  const bucket = getR2Bucket();
+  if (bucket) {
+    const filename = `${randomUUID()}${ext}`;
+    await bucket.put(`${type}/${filename}`, buffer, {
+      httpMetadata: { contentType: `image/${ext.replace(".", "")}`, cacheControl: "public, max-age=31536000, immutable" },
+    });
+    return getR2PublicUrl(`${type}/${filename}`);
+  }
 
+  // Kompresi otomatis hanya pada server Node lokal.
+  const { buffer: compressedBuffer, ext: finalExt } = await compressImage(buffer);
   const filename = `${randomUUID()}${finalExt}`;
-  const dir = path.join(process.cwd(), "public", "uploads", type);
+  const pathModule = await import("path");
+  const { writeFile, mkdir } = await import("fs/promises");
+  const dir = pathModule.join(process.cwd(), "public", "uploads", type);
   await mkdir(dir, { recursive: true });
 
-  const filepath = path.join(dir, filename);
+  const filepath = pathModule.join(dir, filename);
   await writeFile(filepath, compressedBuffer);
 
   console.log(
