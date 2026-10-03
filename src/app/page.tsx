@@ -47,6 +47,8 @@ const KATEGORI_LIST = [
   },
 ];
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [totalLaporan, selesaiLaporan, diprosesLaporan, laporanTerbaru] = await Promise.all([
     prisma.laporan.count(),

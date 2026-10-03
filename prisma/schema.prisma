@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // ============================================
@@ -19,7 +20,7 @@ model Pengurus {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  updates LaporanUpdate[]
+  updates    LaporanUpdate[]
   kasDicatat KasTransaksi[]
 
   @@map("pengurus")
@@ -29,20 +30,20 @@ model Pengurus {
 // Laporan Warga
 // ============================================
 model Laporan {
-  id          String        @id @default(cuid())
-  kode        String        @unique // LP-0001, LP-0002, dst (auto-generate)
-  nama        String?       @default("Anonim") // bersifat anonim
-  noHp        String?       @default("-")
-  kategori    Kategori
+  id          String   @id @default(cuid())
+  kode        String   @unique // LP-0001, LP-0002, dst (auto-generate)
+  nama        String?  @default("Anonim") // bersifat anonim
+  noHp        String?  @default("-")
+  kategori    String   // JALAN_RUSAK, SAMPAH, PENERANGAN, dll
   judul       String
-  deskripsi   String        @db.Text
-  fotoUrl     String        // path relatif: /uploads/laporan/xxx.jpg
+  deskripsi   String
+  fotoUrl     String   // URL / path foto
   latitude    Float
   longitude   Float
-  alamat      String?       @db.Text
-  status      Status        @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  alamat      String?
+  status      String   @default("PENDING") // PENDING, DIPROSES, SELESAI, DITOLAK
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   updates   LaporanUpdate[]
   transaksi KasTransaksi[]
@@ -57,9 +58,9 @@ model LaporanUpdate {
   id          String   @id @default(cuid())
   laporanId   String
   pengurusId  String
-  status      Status
-  keterangan  String   @db.Text
-  fotoUrl     String?  // path relatif: /uploads/update/xxx.jpg
+  status      String   // PENDING, DIPROSES, SELESAI, DITOLAK
+  keterangan  String
+  fotoUrl     String?
   createdAt   DateTime @default(now())
 
   laporan  Laporan  @relation(fields: [laporanId], references: [id], onDelete: Cascade)
@@ -72,48 +73,21 @@ model LaporanUpdate {
 // Transparansi Kas Lingkungan RT/RW
 // ============================================
 model KasTransaksi {
-  id          String         @id @default(cuid())
-  tipe        TipeTransaksi  // PEMASUKAN atau PENGELUARAN
+  id          String   @id @default(cuid())
+  tipe        String   // PEMASUKAN atau PENGELUARAN
   nominal     Float
-  kategori    String         // Iuran Warga, Perbaikan Jalan, Sampah, Dana Sosial, dll
-  keterangan  String         @db.Text
-  buktiUrl    String?        // path bukti nota/kuitansi/struk
-  tanggal     DateTime       @default(now())
+  kategori    String   // Iuran Warga, Perbaikan Jalan, Sampah, dll
+  keterangan  String
+  buktiUrl    String?
+  tanggal     DateTime @default(now())
   
-  // Hubungan opsional ke laporan tertentu (misal pengeluaran untuk tambal jalan LP-0001)
   laporanId   String?
-  laporan     Laporan?       @relation(fields: [laporanId], references: [id], onDelete: SetNull)
+  laporan     Laporan? @relation(fields: [laporanId], references: [id], onDelete: SetNull)
 
-  // Pengurus pencatat transaksi
   pengurusId  String?
-  pengurus    Pengurus?      @relation(fields: [pengurusId], references: [id], onDelete: SetNull)
+  pengurus    Pengurus? @relation(fields: [pengurusId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime @default(now())
 
   @@map("kas_transaksi")
-}
-
-// ============================================
-// Enums
-// ============================================
-enum TipeTransaksi {
-  PEMASUKAN
-  PENGELUARAN
-}
-
-enum Status {
-  PENDING
-  DIPROSES
-  SELESAI
-  DITOLAK
-}
-
-enum Kategori {
-  JALAN_RUSAK
-  SAMPAH
-  PENERANGAN
-  SALURAN_AIR
-  FASILITAS_UMUM
-  KEAMANAN
-  LAINNYA
 }
