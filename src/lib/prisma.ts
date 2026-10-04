@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client/wasm";
+import { PrismaClient } from "@prisma/client";
 import { PrismaD1 } from "@prisma/adapter-d1";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -19,12 +19,8 @@ export const getPrisma = (): PrismaClient => {
     // Mode build time / fallback
   }
 
-  return new PrismaClient();
+  cachedPrisma = new PrismaClient();
+  return cachedPrisma;
 };
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop) {
-    const client = getPrisma();
-    return (client as any)[prop];
-  },
-});
+export const prisma = getPrisma();

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import StatusBadge from "@/components/StatusBadge";
+import VotingCard from "@/components/VotingCard";
 import Link from "next/link";
 
 const KATEGORI_LABEL: Record<string, string> = {
@@ -15,21 +16,27 @@ const KATEGORI_LABEL: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; kategori?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; kategori?: string; page?: string; sortBy?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1");
   const limit = 9;
+  const sortBy = params.sortBy || "newest"; // "newest" atau "urgency"
 
   const where: Record<string, string> = {};
   if (params.status) where.status = params.status;
   if (params.kategori) where.kategori = params.kategori;
 
+  let orderBy: Record<string, any> = { createdAt: "desc" };
+  if (sortBy === "urgency") {
+    orderBy = { voteCriticalCount: "desc" }; // Sort by Critical votes first
+  }
+
   const [laporan, total] = await Promise.all([
     prisma.laporan.findMany({
       where,
       include: { updates: { orderBy: { createdAt: "desc" }, take: 1, include: { pengurus: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     }),
@@ -95,6 +102,21 @@ export default async function DashboardPage({
         <FilterLink href="/dashboard?status=DITOLAK" label="Ditolak" active={params.status === "DITOLAK"} />
       </div>
 
+      {/* Sort */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Urutkan:</span>
+        <FilterLink
+          href={`/dashboard?${new URLSearchParams({ ...params, sortBy: "newest", page: "1" })}`}
+          label="Terbaru"
+          active={sortBy === "newest"}
+        />
+        <FilterLink
+          href={`/dashboard?${new URLSearchParams({ ...params, sortBy: "urgency", page: "1" })}`}
+          label="Paling Urgent"
+          active={sortBy === "urgency"}
+        />
+      </div>
+
       {/* Cards */}
       {laporan.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-center py-20 px-4 transition-colors">
@@ -105,18 +127,19 @@ export default async function DashboardPage({
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
           {laporan.map((l) => (
-            <Link
+            <div
               key={l.id}
-              href={`/laporan/${l.kode}`}
               className="group bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col"
             >
-              <div className="relative bg-slate-100 dark:bg-slate-800 h-44 overflow-hidden">
-                <img
-                  src={l.fotoUrl}
-                  alt={l.judul}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                />
-              </div>
+              <Link href={`/laporan/${l.kode}`} className="block">
+                <div className="relative bg-slate-100 dark:bg-slate-800 h-44 overflow-hidden">
+                  <img
+                    src={l.fotoUrl}
+                    alt={l.judul}
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                  />
+                </div>
+              </Link>
               <div className="p-5 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
@@ -124,20 +147,38 @@ export default async function DashboardPage({
                   </span>
                   <StatusBadge status={l.status} />
                 </div>
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-white mb-2 line-clamp-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-                  {l.judul}
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed mb-4 flex-1">
-                  {l.deskripsi}
-                </p>
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <Link href={`/laporan/${l.kode}`} className="block">
+                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white mb-2 line-clamp-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                    {l.judul}
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed mb-4 flex-1">
+                    {l.deskripsi}
+                  </p>
+                </Link>
+
+                {/* Voting Card */}
+                <div className="mb-3 pb-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+                  <VotingCard
+                    laporanId={l.id}
+                    laporanKode={l.kode}
+                    status={l.status}
+                    initialVotes={{
+                      rendah: l.voteRendahCount,
+                      sedang: l.voteSedangCount,
+                      tinggi: l.voteTinggiCount,
+                      critical: l.voteCriticalCount,
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
                   <span className="bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {KATEGORI_LABEL[l.kategori] || l.kategori}
                   </span>
                   <span>{new Date(l.createdAt).toLocaleDateString("id-ID")}</span>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

@@ -57,9 +57,10 @@ router.post("/", authMiddleware, async (req, res) => {
     const safeFotoUrl = typeof fotoUrl === "string" && fotoUrl.startsWith("/uploads/")
       ? fotoUrl
       : null;
+    const publicMediaUrl = process.env.MEDIA_PUBLIC_URL;
 
     let media = null;
-    if (safeFotoUrl) {
+    if (safeFotoUrl || (typeof fotoUrl === "string" && fotoUrl.startsWith("https://"))) {
       // Fallback 1: baca langsung dari filesystem jika satu mesin
       const localPath = path.resolve(__dirname, "../../..", `public${safeFotoUrl}`);
       if (fs.existsSync(localPath)) {
@@ -68,10 +69,13 @@ router.post("/", authMiddleware, async (req, res) => {
         // Fallback 2: ambil via HTTP ke server Next.js terpercaya
         const nextjsUrl = process.env.NEXTJS_URL || "http://localhost:3000";
         try {
-          const parsedUrl = new URL(safeFotoUrl, nextjsUrl);
-          // Cegah redirect / query ke host selain NextJS_URL
-          const allowedOrigin = new URL(nextjsUrl).origin;
-          if (parsedUrl.origin === allowedOrigin) {
+          const parsedUrl = new URL(fotoUrl, nextjsUrl);
+          // Hanya izinkan Next.js atau public R2 yang dikonfigurasi.
+          const allowedOrigins = [
+            new URL(nextjsUrl).origin,
+            ...(publicMediaUrl ? [new URL(publicMediaUrl).origin] : []),
+          ];
+          if (allowedOrigins.includes(parsedUrl.origin)) {
             media = await MessageMedia.fromUrl(parsedUrl.toString(), {
               unsafeMime: true,
             });

@@ -286,3 +286,202 @@ Untuk menjaga integritas server lokal dari serangan berkas berbahaya (seperti ek
   ```bash
   cd bot-service && npx puppeteer browsers install chrome
   ```
+
+
+---
+
+## 7. Fitur Voting Urgensi Laporan
+
+### Deskripsi Fitur
+
+Fitur voting urgensi memungkinkan warga untuk memberikan penilaian terhadap tingkat urgensi/prioritas suatu laporan dalam skala 4 tier:
+
+- **👎 Rendah**: Masalah bukan prioritas utama
+- **👍 Sedang**: Masalah cukup penting ditangani
+- **🔥 Tinggi**: Masalah sangat perlu prioritas
+- **⚠️ Critical**: Masalah darurat/sangat mendesak
+
+Voting membantu pengurus RT/RW memahami prioritas komunitas dan membuat keputusan penanganan yang lebih tepat.
+
+### Cara Kerja Voting
+
+**Session-Based Deduplication:**
+- Setiap warga (per browser/device) hanya bisa vote 1 kali per laporan
+- Jika user vote ulang dengan tier berbeda, vote lama diganti dengan vote baru
+- Vote history tersimpan di `localStorage` dengan key format: `vote_<laporanId>`
+- Data voting sync ke server database setiap kali ada perubahan
+
+**Tampilan Voting:**
+```
+🗳️ Berapa Urgensi Masalah Ini?
+
+[👎] [👍] [🔥] [⚠️]
+ Rendah Sedang Tinggi Critical
+  (2)   (8)   (15)   (5)
+
+Rendah    ████░░░░░░░░░░░░ 2 orang
+Sedang    ████████░░░░░░░░ 8 orang
+Tinggi    ███████████████░░ 15 orang
+Critical  ████░░░░░░░░░░░░ 5 orang
+
+Total 30 orang memilih urgensi
+```
+
+### Database Schema
+
+Voting data tersimpan di kolom-kolom baru pada model `Laporan`:
+
+```prisma
+model Laporan {
+  // ... existing fields
+  
+  // Voting Counts
+  voteRendahCount    Int @default(0)    // Jumlah vote tier Rendah
+  voteSedangCount    Int @default(0)    // Jumlah vote tier Sedang
+  voteTinggiCount    Int @default(0)    // Jumlah vote tier Tinggi
+  voteCriticalCount  Int @default(0)    // Jumlah vote tier Critical
+  
+  // ... relations
+}
+```
+
+### REST API Endpoints
+
+#### POST /api/laporan/[kode]/vote
+
+Vote untuk laporan dengan kode tertentu.
+
+**Request Body:**
+```json
+{
+  "tierBaru": "TINGGI",
+  "tierLama": null
+}
+```
+
+**Parameters:**
+- `tierBaru` (required): Pilihan urgensi baru. Nilai: `RENDAH`, `SEDANG`, `TINGGI`, atau `CRITICAL`
+- `tierLama` (optional): Pilihan urgensi sebelumnya (jika user sudah pernah vote). Digunakan untuk decrement counter vote lama
+
+**Response Success (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "voteRendah": 2,
+    "voteSedang": 8,
+    "voteTinggi": 15,
+    "voteCritical": 5
+  }
+}
+```
+
+**Response Error:**
+- `400 Bad Request`: tierBaru tidak valid atau format request salah
+- `403 Forbidden`: Laporan status bukan PENDING atau DIPROSES (tidak bisa di-vote)
+- `404 Not Found`: Laporan dengan kode tersebut tidak ditemukan
+- `500 Internal Server Error`: Kesalahan server
+
+### Client-Side Utilities
+
+File: `src/lib/voteStorage.ts`
+
+Kumpulan fungsi untuk mengelola voting data di localStorage:
+
+```typescript
+// Get current vote untuk laporan
+const currentVote = getVoteForReport(laporanId);
+// Returns: "RENDAH" | "SEDANG" | "TINGGI" | "CRITICAL" | null
+
+// Set vote untuk laporan
+setVoteForReport(laporanId, "TINGGI");
+
+// Clear vote untuk laporan
+clearVoteForReport(laporanId);
+
+// Get semua votes (untuk debugging)
+const allVotes = getAllVotes();
+// Returns: { "lap-123": "TINGGI", "lap-456": "RENDAH" }
+
+// Clear semua votes
+clearAllVotes();
+```
+
+### Components
+
+#### VotingCard Component
+
+File: `src/components/VotingCard.tsx`
+
+Reusable React component untuk menampilkan voting interface.
+
+**Props:**
+```typescript
+{
+  laporanId: string;           // ID laporan (CUID)
+  laporanKode: string;         // Kode laporan (LP-0001, dll)
+  status: string;              // Status laporan (PENDING, DIPROSES, SELESAI, DITOLAK)
+  initialVotes: {
+    rendah: number;
+    sedang: number;
+    tinggi: number;
+    critical: number;
+  };
+}
+```
+
+**Features:**
+- 4 tombol vote dengan emoji & label
+- Progress bar menampilkan breakdown votes per tier
+- Vote count per tier
+- Real-time update saat user vote
+- Disabled state untuk laporan tidak aktif (SELESAI/DITOLAK)
+- Error handling & user feedback
+- Dark mode support
+
+**Usage:**
+```tsx
+import VotingCard from "@/components/VotingCard";
+
+<VotingCard
+  laporanId="cm1h4d8dz0000...abc"
+  laporanKode="LP-0001"
+  status="PENDING"
+  initialVotes={{
+    rendah: 2,
+    sedang: 8,
+    tinggi: 15,
+    critical: 5
+  }}
+/>
+```
+
+### Integrasi di Pages
+
+#### Dashboard (`/dashboard`)
+
+VotingCard ditampilkan di setiap laporan card dengan grid layout.
+
+**Fitur tambahan:**
+- Sort by Urgency: `/dashboard?sortBy=urgency` untuk mengurutkan laporan berdasarkan vote Critical
+- Filter + Sort bisa dikombinasikan: `/dashboard?status=PENDING&sortBy=urgency`
+
+#### Detail Laporan (`/laporan/[kode]`)
+
+VotingCard ditampilkan di section terpisah sebelum timeline update dengan styling lebih prominent.
+
+### Best Practices
+
+1. **Educate Warga**: Jelaskan kepada warga bahwa voting membantu pengurus prioritaskan perbaikan
+2. **Monitor Trends**: Pengurus bisa menggunakan data voting untuk identifikasi area/kategori yang paling bermasalah
+3. **Regular Reviews**: Review laporan dengan vote tinggi secara berkala untuk memastikan responsif terhadap kebutuhan komunitas
+4. **Transparent Action**: Publish hasil voting ke warga agar mereka tahu suara mereka didengar
+
+### Contoh Use Case
+
+1. **Warga menemukan jalan rusak parah** → Laporan dibuat dengan foto
+2. **Warga lain lihat laporan di dashboard** → Mereka vote CRITICAL
+3. **30 warga vote CRITICAL** → Dashboard menampilkan laporan ini sebagai prioritas tertinggi
+4. **Pengurus lihat voting breakdown** → Prioritaskan perbaikan jalan ini
+5. **Bot & warga dapat update progress** → Vote breakdown tetap visible untuk accountability
+

@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================
@@ -44,6 +44,12 @@ model Laporan {
   status      String   @default("PENDING") // PENDING, DIPROSES, SELESAI, DITOLAK
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Voting Urgency Counts
+  voteRendahCount    Int @default(0)
+  voteSedangCount    Int @default(0)
+  voteTinggiCount    Int @default(0)
+  voteCriticalCount  Int @default(0)
 
   updates   LaporanUpdate[]
   transaksi KasTransaksi[]

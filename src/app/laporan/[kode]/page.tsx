@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import StatusBadge from "@/components/StatusBadge";
+import VotingCard from "@/components/VotingCard";
 import Link from "next/link";
 
 export default async function LaporanDetailPage({
@@ -96,6 +97,27 @@ export default async function LaporanDetailPage({
               <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-bold hover:underline inline-flex items-center gap-1 text-base">
                 Buka di Google Maps ↗
               </a>
+            </div>
+          </div>
+
+          {/* Voting Card Section */}
+          <div className="mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+            <h2 className="font-extrabold text-xl mb-4 text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <span>🗳️</span>
+              <span>Penilaian Urgensi Masyarakat</span>
+            </h2>
+            <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+              <VotingCard
+                laporanId={laporan.id}
+                laporanKode={laporan.kode}
+                status={laporan.status}
+                initialVotes={{
+                  rendah: laporan.voteRendahCount,
+                  sedang: laporan.voteSedangCount,
+                  tinggi: laporan.voteTinggiCount,
+                  critical: laporan.voteCriticalCount,
+                }}
+              />
             </div>
           </div>
 
