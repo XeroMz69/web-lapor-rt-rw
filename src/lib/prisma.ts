@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client/wasm";
 import { PrismaD1 } from "@prisma/adapter-d1";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -12,17 +12,19 @@ export const getPrisma = (): PrismaClient => {
     const env = ctx?.env as CloudflareEnv | undefined;
     if (env?.DB) {
       const adapter = new PrismaD1(env.DB);
-      cachedPrisma = new PrismaClient({ adapter }) as unknown as PrismaClient;
+      cachedPrisma = new PrismaClient({ adapter } as any);
       return cachedPrisma;
     }
-  } catch (err) {
-    // Fallback untuk development atau non-Cloudflare environment
-    console.warn("Cloudflare context not available, using default Prisma:", err instanceof Error ? err.message : String(err));
+  } catch (_) {
+    // Fallback mode development lokal / build time
   }
 
-  // Development / Standard Node.js environment
-  cachedPrisma = new PrismaClient();
-  return cachedPrisma;
+  return new PrismaClient();
 };
 
-export const prisma = getPrisma();
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrisma();
+    return (client as any)[prop];
+  },
+});

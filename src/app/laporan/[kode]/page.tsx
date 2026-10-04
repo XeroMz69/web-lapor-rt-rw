@@ -112,10 +112,10 @@ export default async function LaporanDetailPage({
                 laporanKode={laporan.kode}
                 status={laporan.status}
                 initialVotes={{
-                  rendah: laporan.voteRendahCount,
-                  sedang: laporan.voteSedangCount,
-                  tinggi: laporan.voteTinggiCount,
-                  critical: laporan.voteCriticalCount,
+                  rendah: laporan.voteRendahCount ?? 0,
+                  sedang: laporan.voteSedangCount ?? 0,
+                  tinggi: laporan.voteTinggiCount ?? 0,
+                  critical: laporan.voteCriticalCount ?? 0,
                 }}
               />
             </div>

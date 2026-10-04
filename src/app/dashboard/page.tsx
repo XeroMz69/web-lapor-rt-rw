@@ -163,10 +163,10 @@ export default async function DashboardPage({
                     laporanKode={l.kode}
                     status={l.status}
                     initialVotes={{
-                      rendah: l.voteRendahCount,
-                      sedang: l.voteSedangCount,
-                      tinggi: l.voteTinggiCount,
-                      critical: l.voteCriticalCount,
+                      rendah: l.voteRendahCount ?? 0,
+                      sedang: l.voteSedangCount ?? 0,
+                      tinggi: l.voteTinggiCount ?? 0,
+                      critical: l.voteCriticalCount ?? 0,
                     }}
                   />
                 </div>
