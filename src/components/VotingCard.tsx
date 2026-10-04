@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getVoteForReport, setVoteForReport } from "@/lib/voteStorage";
+import { useState, useEffect, useCallback } from "react";
 
 interface VotingCardProps {
   laporanId: string;
@@ -46,6 +45,34 @@ const TIER_CONFIG = {
   },
 };
 
+// Safe localStorage access
+const safeStorage = {
+  getItem(key: string): string | null {
+    try {
+      if (typeof window === "undefined" || !window.localStorage) return null;
+      return window.localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  },
+  setItem(key: string, value: string): void {
+    try {
+      if (typeof window === "undefined" || !window.localStorage) return;
+      window.localStorage.setItem(key, value);
+    } catch (e) {
+      // Silently fail
+    }
+  },
+  removeItem(key: string): void {
+    try {
+      if (typeof window === "undefined" || !window.localStorage) return;
+      window.localStorage.removeItem(key);
+    } catch (e) {
+      // Silently fail
+    }
+  },
+};
+
 export default function VotingCard({
   laporanId,
   laporanKode,
@@ -58,9 +85,10 @@ export default function VotingCard({
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Hydrate dari localStorage setelah component mount
+  // Initialize from storage on client-side only
   useEffect(() => {
-    const savedVote = getVoteForReport(laporanId);
+    const key = `vote_${laporanId}`;
+    const savedVote = safeStorage.getItem(key);
     setCurrentVote(savedVote);
     setMounted(true);
   }, [laporanId]);
@@ -69,50 +97,73 @@ export default function VotingCard({
   const totalVotes = votes.rendah + votes.sedang + votes.tinggi + votes.critical;
   const maxVotes = Math.max(...Object.values(votes));
 
-  const handleVote = async (tierBaru: string) => {
-    if (!isActive) return;
+  const handleVote = useCallback(
+    async (tierBaru: string) => {
+      if (!isActive || loading) return;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch(`/api/laporan/${laporanKode}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tierBaru,
-          tierLama: currentVote || undefined,
-        }),
-      });
+      try {
+        const response = await fetch(`/api/laporan/${laporanKode}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tierBaru,
+            tierLama: currentVote || undefined,
+          }),
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          let errorMsg = "Gagal memproses vote";
+          try {
+            const data = await response.json();
+            errorMsg = data.error || errorMsg;
+          } catch {
+            // Keep default error message
+          }
+          throw new Error(errorMsg);
+        }
+
         const data = await response.json();
-        throw new Error(data.error || "Gagal memproses vote");
+
+        // Update votes dari response
+        setVotes({
+          rendah: data.data.voteRendah ?? 0,
+          sedang: data.data.voteSedang ?? 0,
+          tinggi: data.data.voteTinggi ?? 0,
+          critical: data.data.voteCritical ?? 0,
+        });
+
+        // Update currentVote & storage
+        setCurrentVote(tierBaru);
+        const key = `vote_${laporanId}`;
+        safeStorage.setItem(key, tierBaru);
+      } catch (err: any) {
+        console.error("Vote error:", err);
+        setError(err.message || "Gagal vote. Silakan coba lagi.");
+      } finally {
+        setLoading(false);
       }
+    },
+    [isActive, loading, laporanKode, currentVote, laporanId]
+  );
 
-      const data = await response.json();
-
-      // Update votes dari response
-      setVotes({
-        rendah: data.data.voteRendah,
-        sedang: data.data.voteSedang,
-        tinggi: data.data.voteTinggi,
-        critical: data.data.voteCritical,
-      });
-
-      // Update currentVote & localStorage
-      setCurrentVote(tierBaru);
-      setVoteForReport(laporanId, tierBaru);
-    } catch (err: any) {
-      console.error("Vote error:", err);
-      setError(err.message || "Gagal vote");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Render placeholder during hydration
   if (!mounted) {
-    return null; // Prevent hydration mismatch
+    return (
+      <div className="w-full" suppressHydrationWarning>
+        <div className="mb-3 space-y-2">
+          <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-48 animate-pulse"></div>
+          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-4 gap-2 animate-pulse mb-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 h-24"></div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -131,7 +182,7 @@ export default function VotingCard({
       {/* Vote Buttons */}
       <div className="grid grid-cols-4 gap-2 mb-3">
         {Object.entries(TIER_CONFIG).map(([tier, config]) => {
-          const tierVoteCount = votes[tier.toLowerCase() as keyof typeof votes];
+          const tierVoteCount = votes[tier.toLowerCase() as keyof typeof votes] || 0;
           const isCurrentVote = currentVote === tier;
 
           return (
@@ -174,7 +225,7 @@ export default function VotingCard({
       {/* Progress Bar Breakdown */}
       <div className="mb-3 space-y-1.5">
         {Object.entries(TIER_CONFIG).map(([tier, config]) => {
-          const tierVoteCount = votes[tier.toLowerCase() as keyof typeof votes];
+          const tierVoteCount = votes[tier.toLowerCase() as keyof typeof votes] || 0;
           const percentage = maxVotes > 0 ? (tierVoteCount / maxVotes) * 100 : 0;
 
           return (
@@ -185,13 +236,17 @@ export default function VotingCard({
               <div className="flex-1">
                 <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${config.color} transition-all duration-300 ease-out`}
+                    className="h-full transition-all duration-300 ease-out"
                     style={{
-                      width: `${percentage}%`,
-                      backgroundColor: tier === "RENDAH" ? "#94a3b8" : 
-                                       tier === "SEDANG" ? "#f59e0b" : 
-                                       tier === "TINGGI" ? "#f97316" : 
-                                       "#dc2626",
+                      width: `${Math.min(percentage, 100)}%`,
+                      backgroundColor:
+                        tier === "RENDAH"
+                          ? "#94a3b8"
+                          : tier === "SEDANG"
+                            ? "#f59e0b"
+                            : tier === "TINGGI"
+                              ? "#f97316"
+                              : "#dc2626",
                     }}
                   />
                 </div>
