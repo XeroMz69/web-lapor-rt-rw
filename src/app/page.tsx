@@ -73,7 +73,7 @@ export default async function Home() {
         {/* Pill Badge */}
         <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-bold shadow-xs mb-8">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Sistem Pelaporan dan Penanganan Fasilitas Sipil Warga</span>
+          <span>Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik</span>
         </div>
 
         {/* Heading Hero */}
@@ -86,7 +86,7 @@ export default async function Home() {
 
         {/* Subheading Hero */}
         <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
-          <strong className="font-semibold text-slate-900 dark:text-slate-100">SIGAP</strong> memudahkan warga melaporkan jalan berlubang, lampu mati, hingga saluran mampet tanpa login dan tanpa perlu takut identitas terekspos.
+          <strong className="font-semibold text-slate-900 dark:text-slate-100">SIGAP</strong> (Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik) memudahkan warga melaporkan fasilitas rusak, memantau perbaikan, serta mengawal transparansi kas lingkungan tanpa login dan 100% anonim.
         </p>
 
         {/* CTA Buttons */}

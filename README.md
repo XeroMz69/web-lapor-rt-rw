@@ -1,6 +1,6 @@
-# 📢 Platform Lapor RT/RW Digital
+# 📢 SIGAP — Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik
 
-Platform pelaporan dan monitoring fasilitas publik (jalan rusak, lampu mati, sampah liar, saluran mampet, dll.) untuk lingkungan RT/RW secara **100% anonim**, cepat, dan transparan dengan integrasi notifikasi dua arah **WhatsApp Bot**.
+Platform pelaporan dan monitoring fasilitas publik (jalan rusak, lampu mati, sampah liar, saluran mampet, dll.) serta transparansi kas keuangan warga untuk lingkungan RT/RW secara **100% anonim**, cepat, dan transparan dengan integrasi notifikasi dua arah **WhatsApp Bot**.
 
 ---
 

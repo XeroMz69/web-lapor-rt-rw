@@ -28,8 +28,8 @@ export default function Logo({ className = "", size = "md" }: LogoProps) {
             SIGAP
           </span>
         </div>
-        <span className={`font-semibold tracking-widest uppercase text-slate-500 dark:text-slate-400 ${subSize}`}>
-          Smart Civic RT/RW
+        <span className={`font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400 ${subSize}`}>
+          Keuangan • Aduan • Pemantauan
         </span>
       </div>
     </Link>

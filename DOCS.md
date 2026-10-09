@@ -1,6 +1,6 @@
-# 📚 Dokumentasi Teknis & Spesifikasi Sistem
+# 📚 SIGAP — Dokumentasi Teknis & Spesifikasi Sistem
 
-Dokumentasi komprehensif arsitektur, alur data, spesifikasi REST API, skema database, format integrasi WhatsApp Bot, dan panduan pemecahan masalah (*troubleshooting*).
+Dokumentasi komprehensif arsitektur, alur data, spesifikasi REST API, skema database, format integrasi WhatsApp Bot, dan panduan pemecahan masalah (*troubleshooting*) untuk **SIGAP** (*Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik*).
 
 ---
 

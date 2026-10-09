@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SIGAP — Platform Pelaporan & Monitoring Fasilitas Publik RT/RW",
-  description: "Sistem Pelaporan dan Penanganan Fasilitas Lingkungan Warga RT/RW secara 100% anonim, transparan, dan terintegrasi bot WhatsApp.",
+  title: "SIGAP — Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik",
+  description: "SIGAP: Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik RT/RW secara 100% anonim, transparan, dan terintegrasi bot WhatsApp.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -75,7 +75,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-emerald-600 dark:text-emerald-400">SIGAP</span>
-              <span>— Sistem Pelaporan & Monitoring Fasilitas Publik RT/RW</span>
+              <span>— Sistem Informasi Keuangan, Aduan, dan Pemantauan Fasilitas Publik</span>
             </div>
             <span>© 2026 SIGAP • 100% Anonim, Aman & Transparan</span>
           </div>
