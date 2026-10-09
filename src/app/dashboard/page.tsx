@@ -59,7 +59,7 @@ export default async function DashboardPage({
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
             <span>📊</span>
-            <span>Transparansi SIPENA CIVIL</span>
+            <span>Transparansi SIGAP</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-950 dark:text-white tracking-tight">
             Dashboard Penanganan Fasilitas

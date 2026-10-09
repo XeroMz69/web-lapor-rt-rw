@@ -86,7 +86,7 @@ export default async function Home() {
 
         {/* Subheading Hero */}
         <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
-          <strong className="font-semibold text-slate-900 dark:text-slate-100">SIPENA CIVIL</strong> memudahkan warga melaporkan jalan berlubang, lampu mati, hingga saluran mampet tanpa login dan tanpa perlu takut identitas terekspos.
+          <strong className="font-semibold text-slate-900 dark:text-slate-100">SIGAP</strong> memudahkan warga melaporkan jalan berlubang, lampu mati, hingga saluran mampet tanpa login dan tanpa perlu takut identitas terekspos.
         </p>
 
         {/* CTA Buttons */}
@@ -159,7 +159,7 @@ export default async function Home() {
             Alur Integrasi Cerdas
           </h2>
           <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            Bagaimana SIPENA CIVIL Bekerja?
+            Bagaimana SIGAP Bekerja?
           </h3>
           <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base mt-2">
             Menghubungkan warga dan pengurus RT/RW tanpa sekat birokrasi yang berbelit.

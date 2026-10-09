@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SIPENA CIVIL — Platform Pelaporan & Monitoring Fasilitas Publik RT/RW",
+  title: "SIGAP — Platform Pelaporan & Monitoring Fasilitas Publik RT/RW",
   description: "Sistem Pelaporan dan Penanganan Fasilitas Lingkungan Warga RT/RW secara 100% anonim, transparan, dan terintegrasi bot WhatsApp.",
 };
 
@@ -74,10 +74,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">
           <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">SIPENA CIVIL</span>
+              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">SIGAP</span>
               <span>— Sistem Pelaporan & Monitoring Fasilitas Publik RT/RW</span>
             </div>
-            <span>© 2026 SIPENA CIVIL • 100% Anonim, Aman & Transparan</span>
+            <span>© 2026 SIGAP • 100% Anonim, Aman & Transparan</span>
           </div>
         </footer>
       </body>

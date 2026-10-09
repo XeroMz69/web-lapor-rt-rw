@@ -25,10 +25,7 @@ export default function Logo({ className = "", size = "md" }: LogoProps) {
       <div className="flex flex-col leading-tight">
         <div className="flex items-center gap-1.5">
           <span className={`font-black tracking-tight bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 bg-clip-text text-transparent ${titleSize}`}>
-            SIPENA
-          </span>
-          <span className={`font-extrabold tracking-wider text-slate-800 dark:text-slate-100 ${titleSize}`}>
-            CIVIL
+            SIGAP
           </span>
         </div>
         <span className={`font-semibold tracking-widest uppercase text-slate-500 dark:text-slate-400 ${subSize}`}>
